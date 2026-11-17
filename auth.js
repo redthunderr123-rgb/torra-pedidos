@@ -8,7 +8,7 @@
   var css=document.createElement("style");
   css.textContent='.lg-ov{position:fixed;inset:0;z-index:100;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px}'+
   '.lg-box{width:100%;max-width:380px;display:grid;gap:12px;text-align:center;font-family:Inter,system-ui,sans-serif}'+
-  '.lg-box img{height:48px;width:auto;margin:0 auto 8px}.lg-box h1{margin:0 0 6px;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#6b1d1d}'+
+  '.lg-logo svg{display:block;width:160px;height:auto;margin:0 auto 10px}.lg-box h1{margin:0 0 6px;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#6b1d1d}'+
   '.lg-box input{height:54px;border:1.5px solid #ddd4cc;border-radius:999px;padding:0 20px;font:500 17px Inter,system-ui,sans-serif;color:#2b2523;background:#fbf8f6}'+
   '.lg-box button{height:54px;border:0;border-radius:999px;background:#6b1d1d;color:#fff;font:700 14px Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}'+
   '.lg-box button:disabled{opacity:.5}.lg-err{color:#6b1d1d;font-size:13px;font-weight:600;min-height:16px}';
@@ -16,9 +16,8 @@
   var ov=null;
   function mostrar(){
     if(ov)return;
-    var logo=document.querySelector("img.logo");
     ov=document.createElement("div");ov.className="lg-ov";
-    ov.innerHTML='<form class="lg-box" id="lg-form" autocomplete="on">'+(logo?'<img alt="Torra" src="'+logo.src+'">':'')+
+    ov.innerHTML='<form class="lg-box" id="lg-form" autocomplete="on">'+'<div class="lg-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 112" role="img" aria-label="Torra"><defs><clipPath id="tc"><ellipse cx="110" cy="58" rx="107" ry="50"/></clipPath></defs><ellipse cx="110" cy="58" rx="107" ry="50" fill="#6b1d1d"/><g clip-path="url(#tc)" fill="none" stroke="#fff" stroke-width="5.5"><path d="M20 24H190V38"/><path d="M42 24V86"/><circle cx="70" cy="68" r="15.5"/><path d="M97 86V53M97 66Q97 52.5 113 52.5"/><path d="M124 86V53M124 66Q124 52.5 140 52.5"/><circle cx="163" cy="68" r="15.5"/><path d="M181.5 52V86"/></g></svg></div>'+
       '<h1>Acesso da equipe</h1><input id="lg-u" name="username" autocomplete="username" placeholder="Usuário" autocapitalize="none" required>'+
       '<input id="lg-p" name="password" type="password" autocomplete="current-password" placeholder="Senha" required>'+
       '<button type="submit" id="lg-b">Entrar</button><div class="lg-err" id="lg-e" role="status"></div></form>';
