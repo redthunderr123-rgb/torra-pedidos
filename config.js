@@ -1,0 +1,9 @@
+window.FIREBASE_CONFIG={
+  apiKey:"AIzaSyCI9Z3yHwpJ-oFoJ2Vp6BzCC-BAuLkIUgo",
+  authDomain:"torra-pedidos.firebaseapp.com",
+  databaseURL:"https://torra-pedidos-default-rtdb.firebaseio.com",
+  projectId:"torra-pedidos",
+  storageBucket:"torra-pedidos.firebasestorage.app",
+  messagingSenderId:"905527848821",
+  appId:"1:905527848821:web:891315ad804558c0de6d3c"
+};
