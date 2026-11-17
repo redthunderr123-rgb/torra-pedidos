@@ -33,7 +33,7 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:c
 ol{list-style:none;margin:0;padding:0;display:grid;gap:clamp(8px,1.4vh,14px);overflow:hidden;align-content:start}
 .prep li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:clamp(10px,1.5vw,20px);background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:clamp(8px,1.4vh,14px) clamp(12px,1.6vw,20px)}
 .num{font-family:var(--disp);font-weight:700;font-variant-numeric:tabular-nums;font-size:clamp(26px,4vw,52px);line-height:1;color:var(--wine);min-width:2.2ch}
-.nome{font-weight:700;font-size:clamp(18px,2.6vw,34px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nome{font-weight:700;font-size:clamp(17px,2.3vw,32px);line-height:1.15;overflow-wrap:anywhere}
 .falta{font-weight:600;font-size:clamp(13px,1.6vw,20px);color:var(--muted);white-space:nowrap}
 .falta.vez{color:var(--wine)}
 .pronto li{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(10px,1.5vw,20px);background:rgba(255,255,255,.1);border-radius:16px;padding:clamp(8px,1.4vh,14px) clamp(12px,1.6vw,20px)}
@@ -84,9 +84,9 @@ function render(){
   vistos=atual;
   $("n-prep").textContent=prep.length?prep.length+(prep.length>1?" pedidos":" pedido"):"";
   if(!prep.length)$("prep").innerHTML='<li class="vazio" style="background:none;border:0">Nenhum pedido em preparo.</li>';
-  else caber($("prep"),prep,(p,i)=>`<li><span class="num">${p.n}</span><span class="nome">${esc(primeiro(p.nome))}</span><span class="falta${i?"":" vez"}">${i?(i===1?"falta 1 antes":"faltam "+i+" antes"):"é o próximo"}</span></li>`);
+  else caber($("prep"),prep,(p,i)=>`<li><span class="num">${p.n}</span><span class="nome">${esc(String(p.nome||"").trim())}</span><span class="falta${i?"":" vez"}">${i?(i===1?"falta 1 antes":"faltam "+i+" antes"):"é o próximo"}</span></li>`);
   if(!pronto.length)$("pronto").innerHTML='<li class="vazio" style="background:none">Os pedidos prontos aparecem aqui.</li>';
-  else caber($("pronto"),pronto,p=>`<li class="${novos.has(p.id)?"novo":""}"><span class="num">${p.n}</span><span class="nome">${esc(primeiro(p.nome))}</span></li>`);
+  else caber($("pronto"),pronto,p=>`<li class="${novos.has(p.id)?"novo":""}"><span class="num">${p.n}</span><span class="nome">${esc(String(p.nome||"").trim())}</span></li>`);
 }
 window.addEventListener("resize",render);
 (function(){
