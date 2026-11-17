@@ -28,10 +28,17 @@
         .catch(function(x){er.textContent=/network/i.test(x&&x.code||"")?"Sem internet. Tente de novo.":"Usuário ou senha incorretos.";b.disabled=false;});
     };
   }
+  var VALIDADE=5*24*60*60*1000; /* login vale 5 dias */
+  var liberado=false,saiu=false;
+  function vencido(u){var t=Date.parse(u&&u.metadata&&u.metadata.lastSignInTime||"");return !isNaN(t)&&Date.now()-t>VALIDADE;}
   firebase.auth().onAuthStateChanged(function(u){
-    if(u){if(ov){ov.remove();ov=null;}resolver();}
-    else mostrar();
+    if(u&&vencido(u)){firebase.auth().signOut();return;}
+    if(u){
+      if(saiu&&liberado){location.reload();return;} /* religa a fila depois de um novo login */
+      if(ov){ov.remove();ov=null;}liberado=true;resolver();
+    }else{if(liberado)saiu=true;mostrar();}
   });
+  setInterval(function(){var u=firebase.auth().currentUser;if(u&&vencido(u))firebase.auth().signOut();},10*60*1000);
   /* Confere usuário e senha de novo, para ações sensíveis */
   window.torraConfirmarLogin=function(usuario,senha){
     var u=firebase.auth().currentUser;
