@@ -137,6 +137,11 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
 .modal-box .ok{width:72px;height:72px;border-radius:50%;background:var(--wine);color:#fff;font-size:40px;line-height:72px;margin:0 auto 6px}
 .modal-box h3{margin:0;font-size:30px;color:var(--wine)}
 .modal-box p{margin:0;font-size:17px;color:var(--muted)}
+.obs-l{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--wine);margin-bottom:-6px}
+#obs{width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:12px 18px;font:500 16px/1.4 var(--body);color:var(--fg);resize:none}
+#obs:focus-visible{outline:3px solid #c98b5a;outline-offset:2px}
+.totem #obs{font-size:18px}
+.obs-p{margin-top:6px;background:var(--warn-bg);border-left:3px solid var(--wine);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -159,12 +164,12 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
     </section></div>
     <section class="sec-nude">
       <h2>Opcional</h2>
-      <button type="button" class="pill opt nude-btn" id="nude" aria-pressed="false">Leite Nude</button>
+      <button type="button" class="pill opt nude-btn" id="nude" aria-pressed="false">Leite vegetal</button>
     </section>
 
     <form class="form" id="form" autocomplete="off">
       <div class="resumo" id="resumo">Toque em um café para começar.</div>
-      <button type="button" class="pill opt nude-btn nude-m" id="nude2" aria-pressed="false">Leite Nude</button>
+      <button type="button" class="pill opt nude-btn nude-m" id="nude2" aria-pressed="false">Leite vegetal</button>
       <div class="row">
         <div class="qty" aria-label="Quantidade">
           <button type="button" id="menos" aria-label="Diminuir">−</button>
@@ -173,6 +178,8 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
         </div>
         <input id="nome" type="text" placeholder="Nome do cliente" maxlength="40" aria-label="Nome do cliente">
       </div>
+      <label class="obs-l" for="obs">Observação</label>
+      <textarea id="obs" rows="2" maxlength="200" placeholder="Opcional. Ex.: pouco café, mais xarope, mais doce"></textarea>
       <button class="btn" id="add" type="submit" disabled>Adicionar pedido</button>
       <div class="erro" id="erro" role="status"></div>
     </form>
@@ -272,7 +279,7 @@ $("nome").oninput=atualizar;
 
 function atualizar(){
   $("qtd").textContent=qtd;
-  $("resumo").innerHTML=sel?`<b>${qtd}× ${esc(sel)}</b>${nude?" com Leite Nude":""}`:"Toque em um café para começar.";
+  $("resumo").innerHTML=sel?`<b>${qtd}× ${esc(sel)}</b>${nude?" com Leite vegetal":""}`:"Toque em um café para começar.";
   $("add").disabled=!sel||!$("nome").value.trim();
   $("erro").textContent="";
 }
@@ -284,8 +291,9 @@ $("form").onsubmit=e=>{
   if(!nome){$("erro").textContent="Digite o nome do cliente.";return;}
   const id=fb?fb.ref("pedidos").push().key:Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   avisoId=id;
-  gravar(id,{nome,item:sel,qtd,nude,hora:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),status:"fila"});
-  sel=null;nude=false;qtd=1;$("nome").value="";
+  const obs=$("obs").value.trim();
+  gravar(id,{nome,item:sel,qtd,nude,obs,hora:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),status:"fila"});
+  sel=null;nude=false;qtd=1;$("nome").value="";$("obs").value="";
   document.querySelectorAll(".pill.sel").forEach(x=>x.classList.remove("sel"));
   pintaNude();if(celular())window.scrollTo({top:0,behavior:"smooth"});
   filtro="ativos";atualizar();render();
@@ -325,7 +333,7 @@ function render(){
     li.className="ped "+(p.status==="pronto"?"pronto":p.status==="entregue"?"entregue":"");
     li.innerHTML=`<div class="num">#${p.n}</div>
       <div class="top"><span class="nome">${esc(p.nome)}</span><span class="hora">${esc(p.hora)}</span></div>
-      <div class="item">${p.qtd>1?p.qtd+"× ":""}${esc(p.item)}${p.nude?'<span class="tag nude">Leite Nude</span>':""}${p.status==="pronto"?'<span class="tag st">Pronto</span>':""}${p.status==="fila"?`<div><span class="espera">${espera[p.id]?"~"+fmt(espera[p.id]*seg)+" · "+espera[p.id]+" na frente":"Próximo"}</span></div>`:""}</div>
+      <div class="item">${p.qtd>1?p.qtd+"× ":""}${esc(p.item)}${p.nude?'<span class="tag nude">Leite vegetal</span>':""}${p.status==="pronto"?'<span class="tag st">Pronto</span>':""}${p.obs?`<div class="obs-p">Obs.: ${esc(p.obs)}</div>`:""}${p.status==="fila"?`<div><span class="espera">${espera[p.id]?"~"+fmt(espera[p.id]*seg)+" · "+espera[p.id]+" na frente":"Próximo"}</span></div>`:""}</div>
       <div class="acoes"></div>`;
     const a=li.querySelector(".acoes");
     const bt=(txt,cls,fn)=>{const b=document.createElement("button");b.type="button";b.className="btn sm "+cls;b.textContent=txt;b.onclick=fn;a.appendChild(b);};
