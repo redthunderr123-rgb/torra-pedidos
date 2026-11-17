@@ -212,6 +212,7 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="jspdf.umd.min.js"></script>
 <script src="config.js"></script>
 <script>const MODO="painel";</script>
 <script>
@@ -316,6 +317,71 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 
 function mudar(id,status){const p=pedidos.find(x=>x.id===id);if(p){const {id:_,n:__,...d}=p;gravar(id,{...d,status,prontoEm:status==="pronto"?Date.now():(d.prontoEm||null)});}}
 
+function gerarRelatorio(){
+  if(!window.jspdf)throw new Error("jspdf");
+  const {jsPDF}=window.jspdf;
+  const lista=pedidos.filter(p=>p.status!=="excluido").map(p=>({...p,t:+p.ts||Date.now(),q:Math.max(1,+p.qtd||1)})).sort((a,b)=>a.t-b.t);
+  const doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=210,M=16,VIN=[107,29,29],TX=[43,37,35],MU=[111,101,96],LN=[221,212,204],SO=[246,231,214];
+  const data=lista.length?new Date(lista[0].t):new Date();
+  const dd=d=>d.toLocaleDateString("pt-BR"),hh=d=>d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  try{const lg=document.querySelector("img.logo");doc.addImage(lg.src,"PNG",M,12,30,30*lg.naturalHeight/lg.naturalWidth);}catch(e){}
+  doc.setTextColor(...VIN);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Relatório do evento",W-M,19,{align:"right"});
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(...MU);doc.text(dd(data)+"  ·  gerado às "+hh(new Date()),W-M,25,{align:"right"});
+  doc.setDrawColor(...VIN);doc.setLineWidth(.6);doc.line(M,31,W-M,31);
+  const tot=lista.length,cafes=lista.reduce((s,p)=>s+p.q,0),veg=lista.filter(p=>p.nude).reduce((s,p)=>s+p.q,0),obs=lista.filter(p=>p.obs).length;
+  const cards=[["Pedidos",tot],["Cafés",cafes],["Com leite vegetal",veg],["Com observação",obs]];
+  const cw=(W-2*M-9)/4;
+  cards.forEach(([l,v],i)=>{const x=M+i*(cw+3);doc.setFillColor(...SO);doc.roundedRect(x,36,cw,22,3,3,"F");
+    doc.setTextColor(...VIN);doc.setFont("helvetica","bold");doc.setFontSize(20);doc.text(String(v),x+5,48);
+    doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(...MU);doc.text(l.toUpperCase(),x+5,54);});
+  let y=67;
+  const cont=itens=>itens.map(n=>[n,lista.filter(p=>p.item===n).reduce((s,p)=>s+p.q,0)]).sort((a,b)=>b[1]-a[1]);
+  const outros=lista.filter(p=>!QUENTES.includes(p.item)&&!GELADOS.includes(p.item));
+  const max=Math.max(1,...cont(QUENTES).map(x=>x[1]),...cont(GELADOS).map(x=>x[1]));
+  function barras(tit,rows){
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...VIN);doc.text(tit.toUpperCase(),M,y);y+=5;
+    const lx=M,lw=64,bx=M+lw+2,bw=W-M-bx-12;
+    rows.forEach(([n,v])=>{doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...TX);
+      doc.text(doc.splitTextToSize(n,lw)[0],lx,y+3.6);
+      doc.setFillColor(...LN);doc.roundedRect(bx,y,bw,5,1.5,1.5,"F");
+      if(v){doc.setFillColor(...VIN);doc.roundedRect(bx,y,Math.max(2,bw*v/max),5,1.5,1.5,"F");}
+      doc.setFont("helvetica","bold");doc.text(String(v),W-M,y+3.8,{align:"right"});y+=7.2;});
+    y+=4;
+  }
+  barras("Cafés quentes",cont(QUENTES));
+  barras("Cafés gelados",cont(GELADOS));
+  if(outros.length)barras("Outros",[...new Set(outros.map(p=>p.item))].map(n=>[n,outros.filter(p=>p.item===n).reduce((s,p)=>s+p.q,0)]));
+  // pedidos por hora
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...VIN);doc.text("PEDIDOS POR HORA",M,y);y+=8;
+  const porHora={};lista.forEach(p=>{const h=new Date(p.t).getHours();porHora[h]=(porHora[h]||0)+1;});
+  const horas=Object.keys(porHora).map(Number).sort((a,b)=>a-b);
+  const hs=horas.length?Array.from({length:horas[horas.length-1]-horas[0]+1},(_,i)=>horas[0]+i):[];
+  const ch=34,cx=M,cwid=W-2*M,hmax=Math.max(1,...hs.map(h=>porHora[h]||0));
+  if(hs.length){const bw2=Math.min(14,cwid/hs.length-3);
+    hs.forEach((h,i)=>{const v=porHora[h]||0,bh=ch*v/hmax,x=cx+i*(cwid/hs.length)+((cwid/hs.length)-bw2)/2;
+      doc.setFillColor(...VIN);if(v)doc.rect(x,y+ch-bh,bw2,bh,"F");
+      doc.setFontSize(8);doc.setTextColor(...TX);doc.setFont("helvetica","bold");if(v)doc.text(String(v),x+bw2/2,y+ch-bh-1.5,{align:"center"});
+      doc.setFont("helvetica","normal");doc.setTextColor(...MU);doc.text(String(h).padStart(2,"0")+"h",x+bw2/2,y+ch+4,{align:"center"});});
+    doc.setDrawColor(...LN);doc.setLineWidth(.3);doc.line(cx,y+ch,cx+cwid,y+ch);}
+  else{doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...MU);doc.text("Nenhum pedido registrado.",M,y+6);}
+  y+=ch+11;
+  // resumo final
+  const pico=hs.length?hs.reduce((a,b)=>(porHora[b]||0)>(porHora[a]||0)?b:a):null;
+  const top=[...cont(QUENTES),...cont(GELADOS)].sort((a,b)=>b[1]-a[1])[0];
+  const linhas=[
+    ["Primeiro pedido",lista.length?hh(new Date(lista[0].t)):"-"],
+    ["Último pedido",lista.length?hh(new Date(lista[lista.length-1].t)):"-"],
+    ["Horário de pico",pico!==null?String(pico).padStart(2,"0")+"h às "+String(pico+1).padStart(2,"0")+"h ("+porHora[pico]+" pedidos)":"-"],
+    ["Mais pedido",top&&top[1]?top[0]+" ("+top[1]+")":"-"],
+    ["Entregues / prontos / na fila",lista.filter(p=>p.status==="entregue").length+" / "+lista.filter(p=>p.status==="pronto").length+" / "+lista.filter(p=>p.status==="fila").length]];
+  doc.setDrawColor(...LN);doc.setLineWidth(.3);
+  linhas.forEach(([l,v])=>{doc.line(M,y-4.2,W-M,y-4.2);doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(...MU);doc.text(l,M,y);
+    doc.setFont("helvetica","bold");doc.setTextColor(...TX);doc.text(v,W-M,y,{align:"right"});y+=6.6;});
+  doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...MU);doc.text("Torra Coffee · relatório gerado pelo sistema de pedidos",W/2,289,{align:"center"});
+  const nome="Torra_Relatorio_"+data.toISOString().slice(0,10)+".pdf";
+  doc.save(nome);
+}
 let editando=null,draft=null,renderPendente=false;
 function abrirEdicao(p){editando=p.id;draft={item:p.item,nome:p.nome,qtd:p.qtd||1,nude:!!p.nude,obs:p.obs||""};confirmando=null;render();}
 function fecharEdicao(){editando=null;draft=null;render();}
@@ -398,8 +464,15 @@ function render(){
   const z=$("zona");z.innerHTML="";
   if(pedidos.length){
     if(confirmando==="tudo"){
-      z.innerHTML=`<div class="confirma"><span>Apagar todos os pedidos dos dois aparelhos e zerar a numeração?</span><div style="display:flex;gap:8px"><button type="button" class="btn sm ghost" id="c-no">Cancelar</button><button type="button" class="btn sm" id="c-yes">Apagar tudo</button></div></div>`;
+      z.innerHTML=`<div class="confirma"><span>Encerrar o evento. Deseja gerar o relatório antes de zerar a fila?</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm ghost" id="c-no">Cancelar</button><button type="button" class="btn sm ghost" id="c-sem">Não gerar relatório</button><button type="button" class="btn sm" id="c-rel">Gerar relatório do evento</button></div></div>`;
       $("c-no").onclick=()=>{confirmando=null;render();};
+      $("c-sem").onclick=()=>{confirmando="zerar";render();};
+      $("c-rel").onclick=()=>{try{gerarRelatorio();confirmando="pos-rel";}catch(e){console.error(e);confirmando="rel-erro";}render();};
+    }else if(confirmando==="pos-rel"||confirmando==="rel-erro"||confirmando==="zerar"){
+      const txt=confirmando==="pos-rel"?"Relatório gerado. Confira se o PDF foi salvo no aparelho antes de zerar.":confirmando==="rel-erro"?"Não foi possível gerar o relatório. Confira a internet e tente de novo antes de zerar.":"Zerar a fila sem relatório? Todos os pedidos serão apagados dos aparelhos.";
+      z.innerHTML=`<div class="confirma"><span>${txt}</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm ghost" id="c-no">Cancelar</button>${confirmando==="zerar"?"":'<button type="button" class="btn sm ghost" id="c-rel">Gerar de novo</button>'}<button type="button" class="btn sm" id="c-yes">Zerar agora</button></div></div>`;
+      $("c-no").onclick=()=>{confirmando=null;render();};
+      if($("c-rel"))$("c-rel").onclick=()=>{try{gerarRelatorio();confirmando="pos-rel";}catch(e){confirmando="rel-erro";}render();};
       $("c-yes").onclick=()=>{confirmando=null;apagarTudo();};
     }else{
       z.innerHTML=`<div class="rodape"><button type="button" class="btn sm ghost" id="zerar">Encerrar evento e zerar</button></div>`;
