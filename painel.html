@@ -348,7 +348,7 @@ function gerarRelatorio(){
       doc.text(doc.splitTextToSize(n,lw)[0],lx,y+3.6);
       doc.setFillColor(...LN);doc.roundedRect(bx,y,bw,5,1.5,1.5,"F");
       if(v){doc.setFillColor(...VIN);doc.roundedRect(bx,y,Math.max(2,bw*v/max),5,1.5,1.5,"F");}
-      doc.setFont("helvetica","bold");doc.text(String(v),W-M,y+3.8,{align:"right"});y+=7.2;});
+      doc.setFont("helvetica","bold");doc.text(String(v),W-M,y+3.8,{align:"right"});y+=6.2;});
     y+=4;
   }
   barras("Cafés quentes",cont(QUENTES));
@@ -359,7 +359,7 @@ function gerarRelatorio(){
   const porHora={};lista.forEach(p=>{const h=new Date(p.t).getHours();porHora[h]=(porHora[h]||0)+1;});
   const horas=Object.keys(porHora).map(Number).sort((a,b)=>a-b);
   const hs=horas.length?Array.from({length:horas[horas.length-1]-horas[0]+1},(_,i)=>horas[0]+i):[];
-  const ch=34,cx=M,cwid=W-2*M,hmax=Math.max(1,...hs.map(h=>porHora[h]||0));
+  const ch=26,cx=M,cwid=W-2*M,hmax=Math.max(1,...hs.map(h=>porHora[h]||0));
   if(hs.length){const bw2=Math.min(14,cwid/hs.length-3);
     hs.forEach((h,i)=>{const v=porHora[h]||0,bh=ch*v/hmax,x=cx+i*(cwid/hs.length)+((cwid/hs.length)-bw2)/2;
       doc.setFillColor(...VIN);if(v)doc.rect(x,y+ch-bh,bw2,bh,"F");
@@ -380,6 +380,25 @@ function gerarRelatorio(){
   doc.setDrawColor(...LN);doc.setLineWidth(.3);
   linhas.forEach(([l,v])=>{doc.line(M,y-4.2,W-M,y-4.2);doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(...MU);doc.text(l,M,y);
     doc.setFont("helvetica","bold");doc.setTextColor(...TX);doc.text(v,W-M,y,{align:"right"});y+=6.6;});
+  // gráfico de pizza com as porcentagens por café
+  y+=2;doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...VIN);doc.text("PARTICIPAÇÃO DE CADA CAFÉ (%)",M,y);y+=4;
+  const fatias=[...cont(QUENTES),...cont(GELADOS),...[...new Set(outros.map(p=>p.item))].map(n=>[n,outros.filter(p=>p.item===n).reduce((s,p)=>s+p.q,0)])].filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const CORES=[[107,29,29],[201,102,62],[78,20,20],[224,154,91],[156,59,46],[217,180,138],[138,90,68],[176,124,106],[163,75,75],[125,107,93],[232,207,181],[194,165,152],[90,60,50],[240,190,150]];
+  const r=Math.min(24,(287-y-10)/2),pcx=M+r,pcy=y+r;
+  if(fatias.length&&cafes){let a0=-Math.PI/2;
+    fatias.forEach(([n,v],i)=>{const a1=a0+2*Math.PI*v/cafes,cor=CORES[i%CORES.length];doc.setFillColor(...cor);
+      const pts=[];for(let a=a0;a<a1;a+=0.03)pts.push([pcx+r*Math.cos(a),pcy+r*Math.sin(a)]);pts.push([pcx+r*Math.cos(a1),pcy+r*Math.sin(a1)]);
+      const seg=[];let px=pcx,py=pcy;pts.forEach(([x,yy])=>{seg.push([x-px,yy-py]);px=x;py=yy;});
+      doc.lines(seg,pcx,pcy,[1,1],"F",true);
+      const pc=v/cafes*100;if(pc>=6){const am=(a0+a1)/2;doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...((i===3||i===5||i===10||i===11||i===13)?TX:[255,255,255]));
+        doc.text(Math.round(pc)+"%",pcx+r*.66*Math.cos(am),pcy+r*.66*Math.sin(am)+1.2,{align:"center"});}
+      a0=a1;});
+    const lx0=M+2*r+10,colw=(W-M-lx0)/2,lh=Math.min(5.2,(2*r)/Math.ceil(fatias.length/2));
+    fatias.forEach(([n,v],i)=>{const col=i<Math.ceil(fatias.length/2)?0:1,row=col?i-Math.ceil(fatias.length/2):i,lx=lx0+col*colw,ly=y+2+row*lh;
+      doc.setFillColor(...CORES[i%CORES.length]);doc.rect(lx,ly,3,3,"F");
+      doc.setFont("helvetica","normal");doc.setFontSize(7.8);doc.setTextColor(...TX);doc.text(doc.splitTextToSize(n,colw-20)[0],lx+4.5,ly+2.6);
+      doc.setFont("helvetica","bold");doc.text((v/cafes*100).toFixed(1).replace(".",",")+"%",lx+colw-3,ly+2.6,{align:"right"});});
+  }else{doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...MU);doc.text("Nenhum café registrado.",M,y+6);}
   doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...MU);doc.text("Torra Coffee · relatório gerado pelo sistema de pedidos",W/2,289,{align:"center"});
   const nome="Torra_Relatorio_"+data.toISOString().slice(0,10)+".pdf";
   doc.save(nome);
