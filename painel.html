@@ -306,7 +306,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{filtro=t.dataset.f;c
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
-function mudar(id,status){const p=pedidos.find(x=>x.id===id);if(p){const {id:_,n:__,...d}=p;gravar(id,{...d,status});}}
+function mudar(id,status){const p=pedidos.find(x=>x.id===id);if(p){const {id:_,n:__,...d}=p;gravar(id,{...d,status,prontoEm:status==="pronto"?Date.now():(d.prontoEm||null)});}}
 
 function render(){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.f===filtro));
