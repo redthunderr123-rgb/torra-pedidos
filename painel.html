@@ -213,7 +213,9 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script>const MODO="painel";</script>
 <script>
 const QUENTES=["Espresso longo","Espresso curto","Cappuccino italiano","Cappuccino de caramelo salgado","Cappuccino de pistache","Cappuccino de vanilla"];
@@ -235,9 +237,9 @@ let avisoId=null;
 
 function sync(txt,ok){const s=$("sync");s.textContent=txt;s.className="sync "+(ok?"on":"off");}
 
-(function(){
+torraAuthPronto.then(function(){
   if(!window.FIREBASE_CONFIG||!window.firebase){sync("Só neste aparelho",false);return;}
-  try{firebase.initializeApp(window.FIREBASE_CONFIG);fb=firebase.database();}catch(e){sync("Só neste aparelho",false);return;}
+  try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);fb=firebase.database();}catch(e){sync("Só neste aparelho",false);return;}
   sync("Conectando…",false);
   fb.ref(".info/connected").on("value",s=>sync(s.val()?"Sincronizado":"Sem internet, guardando…",!!s.val()));
   if(MODO==="cliente")return; /* a tela do cliente nunca carrega a fila */
@@ -247,7 +249,7 @@ function sync(txt,ok){const s=$("sync");s.textContent=txt;s.className="sync "+(o
     pedidos=Object.keys(v).map(id=>({id,...v[id]}));
     render();
   },()=>sync("Erro de sincronização",false));
-})();
+});
 
 function gravar(id,dados){
   if(fb){
@@ -461,7 +463,20 @@ function render(){
     ol.appendChild(li);
   });
   if(editando&&document.getElementById("ed-form"))ligarEditor();
+  if(confirmando==="login"&&$("lg2"))return;
   const z=$("zona");z.innerHTML="";
+  if(confirmando==="login"){
+    z.innerHTML=`<form class="confirma" id="lg2" autocomplete="off" style="display:grid;gap:10px"><span>Para encerrar o evento, confirme o login da equipe.</span>
+      <input id="lg2-u" placeholder="Usuário" autocapitalize="none" style="height:46px;border:1.5px solid var(--line);border-radius:999px;padding:0 16px;font:500 16px var(--body)">
+      <input id="lg2-p" type="password" placeholder="Senha" style="height:46px;border:1.5px solid var(--line);border-radius:999px;padding:0 16px;font:500 16px var(--body)">
+      <div class="erro" id="lg2-e"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button type="button" class="btn sm ghost" id="lg2-c">Cancelar</button><button type="submit" class="btn sm" id="lg2-b">Confirmar</button></div></form>`;
+    $("lg2-c").onclick=()=>{confirmando=null;render();};
+    $("lg2").onsubmit=e=>{e.preventDefault();$("lg2-b").disabled=true;$("lg2-e").textContent="";
+      torraConfirmarLogin($("lg2-u").value,$("lg2-p").value).then(()=>{confirmando="tudo";render();})
+        .catch(()=>{$("lg2-e").textContent="Usuário ou senha incorretos.";$("lg2-b").disabled=false;});};
+    $("lg2-u").focus();return;
+  }
   if(pedidos.length){
     if(confirmando==="tudo"){
       z.innerHTML=`<div class="confirma"><span>Encerrar o evento. Deseja gerar o relatório antes de zerar a fila?</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm ghost" id="c-no">Cancelar</button><button type="button" class="btn sm ghost" id="c-sem">Não gerar relatório</button><button type="button" class="btn sm" id="c-rel">Gerar relatório do evento</button></div></div>`;
@@ -476,7 +491,7 @@ function render(){
       $("c-yes").onclick=()=>{confirmando=null;apagarTudo();};
     }else{
       z.innerHTML=`<div class="rodape"><button type="button" class="btn sm ghost" id="zerar">Encerrar evento e zerar</button></div>`;
-      $("zerar").onclick=()=>{confirmando="tudo";render();};
+      $("zerar").onclick=()=>{confirmando=(window.firebase&&firebase.auth&&firebase.auth().currentUser)?"login":"tudo";render();};
     }
   }
 }

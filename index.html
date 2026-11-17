@@ -214,7 +214,9 @@ li.ped.entregue{opacity:.6;border-left-color:var(--line)}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script>const MODO="cliente";</script>
 <script>
 const QUENTES=["Espresso longo","Espresso curto","Cappuccino italiano","Cappuccino de caramelo salgado","Cappuccino de pistache","Cappuccino de vanilla"];
@@ -236,9 +238,9 @@ let avisoId=null;
 
 function sync(txt,ok){const s=$("sync");s.textContent=txt;s.className="sync "+(ok?"on":"off");}
 
-(function(){
+torraAuthPronto.then(function(){
   if(!window.FIREBASE_CONFIG||!window.firebase){sync("Só neste aparelho",false);return;}
-  try{firebase.initializeApp(window.FIREBASE_CONFIG);fb=firebase.database();}catch(e){sync("Só neste aparelho",false);return;}
+  try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);fb=firebase.database();}catch(e){sync("Só neste aparelho",false);return;}
   sync("Conectando…",false);
   fb.ref(".info/connected").on("value",s=>sync(s.val()?"Sincronizado":"Sem internet, guardando…",!!s.val()));
   if(MODO==="cliente")return; /* a tela do cliente nunca carrega a fila */
@@ -248,7 +250,7 @@ function sync(txt,ok){const s=$("sync");s.textContent=txt;s.className="sync "+(o
     pedidos=Object.keys(v).map(id=>({id,...v[id]}));
     render();
   },()=>sync("Erro de sincronização",false));
-})();
+});
 
 function gravar(id,dados){
   if(fb){

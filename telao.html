@@ -59,7 +59,9 @@ footer{text-align:center;color:var(--muted);font-size:clamp(12px,1.4vw,18px);pad
 <footer id="rodape">Procure seu número e nome na tela.</footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -89,13 +91,13 @@ function render(){
   else caber($("pronto"),pronto,p=>`<li class="${novos.has(p.id)?"novo":""}"><span class="num">${p.n}</span><span class="nome">${esc(String(p.nome||"").trim())}</span></li>`);
 }
 window.addEventListener("resize",render);
-(function(){
+torraAuthPronto.then(function(){
   if(!window.FIREBASE_CONFIG||!window.firebase){$("rodape").textContent="Sem conexão com a fila.";render();return;}
-  firebase.initializeApp(window.FIREBASE_CONFIG);
+  if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
   const db=firebase.database();
   db.ref(".info/connected").on("value",s=>{$("rodape").textContent=s.val()?"Procure seu número e nome na tela.":"Reconectando…";});
   db.ref("pedidos").on("value",snap=>{const v=snap.val()||{};pedidos=Object.keys(v).map(id=>({id,...v[id]}));render();});
-})();
+});
 </script>
 </body>
 </html>
