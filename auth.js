@@ -38,7 +38,11 @@
       if(ov){ov.remove();ov=null;}liberado=true;resolver();
     }else{if(liberado)saiu=true;mostrar();}
   });
-  setInterval(function(){var u=firebase.auth().currentUser;if(u&&vencido(u))firebase.auth().signOut();},10*60*1000);
+  /* Confere no Firebase se o usuário ainda existe (senha trocada ou conta recriada derruba a sessão) */
+  function conferir(u){if(!u)return;u.getIdToken(true).catch(function(e){var c=String(e&&e.code||"");
+    if(/user-not-found|user-token-expired|user-disabled|invalid-user-token/.test(c))firebase.auth().signOut();});}
+  firebase.auth().onAuthStateChanged(function(u){if(u)conferir(u);});
+  setInterval(function(){var u=firebase.auth().currentUser;if(u&&vencido(u))firebase.auth().signOut();else conferir(u);},10*60*1000);
   /* Confere usuário e senha de novo, para ações sensíveis */
   window.torraConfirmarLogin=function(usuario,senha){
     var u=firebase.auth().currentUser;
